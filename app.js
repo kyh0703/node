@@ -30,7 +30,11 @@ app.use(
   })
 );
 app.use((req, res, next) => {
-  console.log('모든 요청에 다 실행됩니다.');
+  if (process.env.NODE_ENV === 'production') {
+    morgan('combined')(req, res, next);
+  } else {
+    morgan('dev')(req, res, next);
+  }
   next();
 });
 
