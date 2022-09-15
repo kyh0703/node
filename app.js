@@ -1,13 +1,13 @@
-import express from 'express';
-import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
-import session from 'express-session';
-import dotenv from 'dotenv';
-import path from 'path';
-
-const __dirname = path.resolve();
+const express = require('express');
+const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const dotenv = require('dotenv');
+const path = require('path');
 
 dotenv.config();
+const indexRouter = require('./routes');
+const userRouter = require('./routes/user');
 
 const app = express();
 app.set('port', process.env.PORT || 3005);
@@ -29,6 +29,11 @@ app.use(
     name: 'session-cookie',
   })
 );
+
+// defined routes
+app.use('/', indexRouter);
+app.use('/user', userRouter);
+
 app.use((req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     morgan('combined')(req, res, next);
@@ -36,6 +41,10 @@ app.use((req, res, next) => {
     morgan('dev')(req, res, next);
   }
   next();
+});
+
+app.use((req, res, next) => {
+  res.status(404).send('Not Found');
 });
 
 app.get(
