@@ -1,19 +1,19 @@
-// 사용자 이름을 눌렀을 때 댓글 로딩
+// 사용자 이름 눌렀을 때 댓글 로딩
 document.querySelectorAll('#user-list tr').forEach((el) => {
-  el.addEventListener('click', () => {
+  el.addEventListener('click', function () {
     const id = el.querySelector('td').textContent;
     getComment(id);
   });
 });
 // 사용자 로딩
-const getUser = async () => {
+async function getUser() {
   try {
     const res = await axios.get('/users');
     const users = res.data;
     console.log(users);
     const tbody = document.querySelector('#user-list tbody');
     tbody.innerHTML = '';
-    users.map((user) => {
+    users.map(function (user) {
       const row = document.createElement('tr');
       row.addEventListener('click', () => {
         getComment(user.id);
@@ -34,17 +34,18 @@ const getUser = async () => {
       tbody.appendChild(row);
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
-};
+}
 // 댓글 로딩
-const getComment = async (id) => {
+async function getComment(id) {
   try {
     const res = await axios.get(`/users/${id}/comments`);
     const comments = res.data;
     const tbody = document.querySelector('#comment-list tbody');
     tbody.innerHTML = '';
-    comments.map((comment) => {
+    comments.map(function (comment) {
+      // 로우 셀 추가
       const row = document.createElement('tr');
       let td = document.createElement('td');
       td.textContent = comment.id;
@@ -67,7 +68,7 @@ const getComment = async (id) => {
           await axios.patch(`/comments/${comment.id}`, { comment: newComment });
           getComment(id);
         } catch (err) {
-          console.log(err);
+          console.error(err);
         }
       });
       const remove = document.createElement('button');
@@ -78,7 +79,7 @@ const getComment = async (id) => {
           await axios.delete(`/comments/${comment.id}`);
           getComment(id);
         } catch (err) {
-          console.log(err);
+          console.error(err);
         }
       });
       // 버튼 추가
@@ -91,9 +92,9 @@ const getComment = async (id) => {
       tbody.appendChild(row);
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
-};
+}
 // 사용자 등록 시
 document.getElementById('user-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -110,7 +111,7 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
     await axios.post('/users', { name, age, married });
     getUser();
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
   e.target.username.value = '';
   e.target.age.value = '';
@@ -133,7 +134,7 @@ document
       await axios.post('/comments', { id, comment });
       getComment(id);
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
     e.target.userid.value = '';
     e.target.comment.value = '';
