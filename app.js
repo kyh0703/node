@@ -1,57 +1,70 @@
-import express from 'express';
-import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
-import session from 'express-session';
-import dotenv from 'dotenv';
-import path from 'path';
-
-const __dirname = path.resolve();
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan');
+const path = require('path');
+const session = require('express-session');
+const nunjucks = require('nunjucks');
+const dotenv = require('dotenv');
+const passport = require('passport');
 
 dotenv.config();
+const pageRouter = require('./routes/page');
+const authRouter = require('./routes/auth');
+const { sequelize } = require('./models');
+const passportConfig = require('./passport');
 
 const app = express();
-app.set('port', process.env.PORT || 3005);
+passportConfig();
+app.set('port', process.env.PORT || 8001);
+app.set('view engine', 'html');
+nunjucks.configure('views', {
+  express: app,
+  watch: true,
+});
+sequelize
+  .sync({ force: false })
+  .then(() => {
+    console.log('데이터 베이스 연결 성공');
+  })
+  .catch((err) => {
+    console.log(err);
+  });
 
-app.use(morgan('dev')); // log trace - dev, combined, common, short, tiny
-app.use('/', express.static(path.join(__dirname, 'public')));
+app.use(morgan('dev'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(
   session({
     resave: false,
+    secret: process.env.COO,
     saveUninitialized: false,
-    secret: process.env.COOKIE_SECRET,
     cookie: {
       httpOnly: true,
       secure: false,
     },
-    name: 'session-cookie',
   })
 );
-app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production') {
-    morgan('combined')(req, res, next);
-  } else {
-    morgan('dev')(req, res, next);
-  }
-  next();
-});
+app.use(passport.initialize());
+app.use(passport.session());
 
-app.get(
-  '/',
-  (req, res, next) => {
-    console.log('GET 요청에서만 실행됩니다.');
-    next();
-  },
-  (req, res) => {
-    throw new Error('에러는 에러 처리 미들웨어로 갑니다.');
-  }
-);
+app.use('/', pageRouter);
+app.use('/auth', authRouter);
+
+app.use((req, res, next) => {
+  const error = new Error(`${req.method} ${req.url} 라우터가 없습니다.`);
+  error.status = 404;
+  next(error);
+});
 
 app.use((err, req, res, next) => {
-  console.log(err);
-  res.status(500).send(err.message);
+  res.locals.message = err.message;
+  res.locals.error = process.env.NODE_ENV !== 'production' ? err : {};
+  res.status(err.status || 500);
+  res.render('error');
 });
 
-app.listen(app.get('port'), () => {});
+app.listen(app.get('port'), () => {
+  console.log(app.get('port'), '번 포트에서 대기 중 ');
+});
